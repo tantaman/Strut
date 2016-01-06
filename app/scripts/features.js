@@ -13,13 +13,14 @@ define([
 	'strut/presentation_generator/impress/main',
 	'strut/presentation_generator/bespoke/main',
 	'strut/presentation_generator/handouts/main',
+	'strut/presentation_generator/impress-mobile/main',
 	'strut/presentation_generator/main',
 	'tantaman/web/saver/main',
 	'strut/slide_editor/main',
 	'strut/transition_editor/main',
 	'strut/slide_components/main',
 	'strut/well_context_buttons/main',
-	'tantaman/web/local_storage/main',
+	// 'tantaman/web/local_storage/main', // LLS is being set up in main.
 	// 'tantaman/web/remote_storage/main',
 	'strut/startup/main'
 	],

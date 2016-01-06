@@ -8,8 +8,8 @@ function(ImpressGenerator) {
 		capabilities: {
 			freeformStepping: true
 		},
-		generate: function(deckAttrs) {
-			return ImpressGenerator.render(deckAttrs);
+		generate: function(deck) {
+			return ImpressGenerator.render(deck);
 		},
 
 		getSlideHash: function(editorModel) {

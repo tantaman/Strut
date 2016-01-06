@@ -11,7 +11,8 @@ define(['libs/backbone',
 
 		function adaptStorageInterfaceForSavers(storageInterface) {
 			return new Adapter(storageInterface, {
-				store: 'savePresentation'
+				store: 'savePresentation',
+				ready: 'ready'
 			});
 		}
 
@@ -19,6 +20,7 @@ define(['libs/backbone',
 			initialize: function() {
 				// is there a better way to do this?
 				window.uiTestAcc = this;
+				this.hasStorage = this.hasStorage.bind(this);
 
 				this._fontState = window.sessionMeta.fontState || {};
 				this._deck = new Deck();
@@ -39,11 +41,17 @@ define(['libs/backbone',
 				this.exportable.adapted = this;
 
 				var savers = this.registry.getBest('tantaman.web.saver.AutoSavers');
+				var storageInterface = this.registry.getBest('strut.StorageInterface');
+				this.storageInterface = storageInterface;
 				if (savers) {
-					var storageInterface = null;
-					var storageInterface = this.registry.getBest('strut.StorageInterface');
+					var self = this;
 					storageInterface = adaptStorageInterfaceForSavers(storageInterface);
-					this._exitSaver = savers.exitSaver(this.exportable, storageInterface);
+					this._exitSaver = savers.exitSaver(this.exportable, {
+						identifier: 'strut-exitsave', 
+						cb: function() {
+							window.sessionMeta.lastPresentation = self.exportable.identifier()
+						}
+					});
 					this._timedSaver = savers.timedSaver(this.exportable, 20000, storageInterface);
 				}
 
@@ -79,14 +87,21 @@ define(['libs/backbone',
 				Backbone.off(null, null, this);
 			},
 
+			validKey: function(name) {
+				return this.storageInterface.validKey(name);
+			},
+
 			newPresentation: function() {
 				var num = window.sessionMeta.num || 0;
+				this.trigger('newPresentationDesired', num+1);
+			},
 
+			createPresentation: function(name) {
+				var num = window.sessionMeta.num || 0;
 				num += 1;
 				window.sessionMeta.num = num;
-
 				this.importPresentation({
-	        		fileName: "presentation-" + num,
+	        		fileName: name,
 	        		slides: []
 	      		});
 				this._deck.create();
@@ -108,14 +123,28 @@ define(['libs/backbone',
 			},
 
 			importPresentation: function(rawObj) {
+				this.storageInterface.revokeAllAttachmentURLs();
 				// deck disposes iteself on import?
+				// TODO: purge URL cache
 				console.log('New file name: ' + rawObj.fileName);
 				this._deck.import(rawObj);
+			},
+
+			hasStorage: function() {
+				return this.storageInterface.ready();
 			},
 
 			exportPresentation: function(filename) {
 				if (filename)
 					this._deck.set('fileName', filename);
+				var genid = this._deck.get('__genid');
+
+				if (genid == null) genid = 0;
+				else genid += 1;
+
+				// Set the generation id for the deck.
+				// A higher genid means its a newer version of the presentation.
+				this._deck.set('__genid', genid);
 				var obj = this._deck.toJSON(false, true);
 				return obj;
 			},
@@ -158,14 +187,36 @@ define(['libs/backbone',
 				return this._deck.get('slides').indexOf(this._deck.get('activeSlide'));
 			},
 
-			addComponent: function(type) {
-				var slide = this._deck.get('activeSlide');
+			addComponent: function(data, slide) {
+				slide = slide || this._deck.get('activeSlide');
 				if (slide) {
-					var comp = ComponentFactory.instance.createModel(type, {
-						fontStyles: this._fontState
-					});
-					slide.add(comp);
+					if (typeof data.src == 'object' && data.src.file != null) {
+						this._addEmbeddedComponent(data, slide);
+					} else {
+						var comp = ComponentFactory.instance.createModel(data, {
+							fontStyles: this._fontState
+						});
+						slide.add(comp);
+					}
 				}
+			},
+
+			_addEmbeddedComponent: function(data, slide) {
+				var embedData = data.src;
+				var docKey = this.fileName();
+				var attachKey = embedData.file.name;
+				var self = this;
+				this.storageInterface.storeAttachment(docKey,
+				attachKey, embedData.file).then(function() {
+					data.src = {
+						docKey: docKey,
+						attachKey: attachKey
+					};
+					self.addComponent(data, slide);
+				}, function(error) {
+					console.error(error);
+					// TODO: report an error to our error reporting module...
+				}).done();
 			},
 
 			_fontStateChanged: function(state) {

@@ -4,7 +4,7 @@
 define(['libs/backbone', 'libs/imgup'],
 function(Backbone, Imgup) {
 	var modalCache = {};
-	var reg = /[a-z]+:/;
+	var reg = /^[a-z]+:/;
 	var imgup = new Imgup('847de02274cba30');
 
 	var ignoredVals = {
@@ -24,7 +24,10 @@ function(Backbone, Imgup) {
 			"change input[type='file']": "fileChosen",
 			"keyup input[name='itemUrl']": "urlChanged",
 			"paste input[name='itemUrl']": "urlChanged",
-			"hidden": "hidden"
+			"hidden": "hidden",
+			"dragover": "_dragover",
+			"drop": "_drop",
+			"dragleave": "_dragleave"
 		},
 		initialize: function() {
 			this.loadItem = _.debounce(this.loadItem.bind(this), 200);
@@ -35,50 +38,87 @@ function(Backbone, Imgup) {
 		},
 		okClicked: function() {
 			if (!this.$el.find(".ok").hasClass("disabled")) {
-				this.cb(this.src);
+				if (this.file != null) {
+					this.cb({
+						file: this.file,
+						src: this.src
+					});
+				} else {
+					this.cb(this.src);
+				}
 				return this.$el.modal('hide');
 			}
 		},
+
+		_dragover: function(e) {
+			e.stopPropagation();
+			e.preventDefault();
+			e.originalEvent.dataTransfer.dropEffect = 'copy';
+
+			this.$droparea.addClass('active');
+		},
+
+		_dragleave: function(e) {
+			this.$droparea.removeClass('active');
+		},
+
+		_drop: function(e) {
+			this.$droparea.removeClass('active');
+			e.stopPropagation();
+			e.preventDefault();
+			var f = e.originalEvent.dataTransfer.files[0];
+
+			this._fileChosen(f);
+		},
+
 		fileChosen: function(e) {
 			var f, reader,
 				_this = this;
 			f = e.target.files[0];
+
+			this._fileChosen(f);
+		},
+
+		_fileChosen: function(f) {
 			if (!f.type.match('image.*'))
 				return;
 
-			this._switchToProgress();
 			this.item.src = '';
+			var _this = this;
 
-			imgup.upload(f).progress(function(ratio) {
-				_this._updateProgress(ratio);
-			}).then(function(result) {
-				_this._switchToThumbnail();
-				_this.$input.val(result.data.link);
-				_this.urlChanged({
-					which: -1
+			if (this.options.hasStorage()) {
+				var url = URL.createObjectURL(f);
+				this.$input.val(url);
+				this.item.src = url;
+				URL.revokeObjectURL(url);
+				this.file = f;
+			} else {
+				this._switchToProgress();
+
+				imgup.upload(f).progress(function(ratio) {
+					_this._updateProgress(ratio);
+				}).then(function(result) {
+					_this._switchToThumbnail();
+					_this.$input.val(result.data.link);
+					_this.urlChanged({
+						which: -1
+					});
+				}, function() {
+					_this._updateProgress(0);
+					_this._switchToThumbnail();
+					_this.$input.val('Failed to upload image to imgur');
 				});
-			}, function() {
-				_this._updateProgress(0);
-				_this._switchToThumbnail();
-				_this.$input.val('Failed to upload image to imgur');
-			});
-
-			
-			// reader = new FileReader();
-			// reader.onload = function(e) {
-			//   _this.$input.val(e.target.result);
-			//   _this.urlChanged({
-			//     which: -1
-			//   });
-			// };
-			// reader.readAsDataURL(f);
+			}
 		},
+
 		browseClicked: function() {
 			return this.$el.find('input[type="file"]').click();
 		},
 		hidden: function() {
+			this.$el.find('input[type="file"]').val('');
 			if (this.$input != null) {
 				this.item.src = '';
+				this.file = null;
 				return this.$input.val("");
 			}
 		},
@@ -98,10 +138,12 @@ function(Backbone, Imgup) {
 
 			var r = reg.exec(val);
 			if (r == null || r.index != 0) {
-				val = 'http://' + val;
+				if (val !== '')
+					val = 'http://' + val;
 			}
 
-			this.item.src = val;
+			if (this.item.src != val)
+				this.item.src = val;
 			return this.src = this.item.src;
 		},
 		_itemLoadError: function() {
@@ -145,6 +187,7 @@ function(Backbone, Imgup) {
 			this.$progress = this.$el.find('.progress');
 			this.$progressBar = this.$progress.find('.bar');
 			this.$thumbnail = this.$el.find('.thumbnail');
+			this.$droparea = this.$el.find('.droparea');
 
 			return this.$el;
 		},
