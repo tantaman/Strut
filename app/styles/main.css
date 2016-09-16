@@ -24,6 +24,32 @@ body {
   background-image: url('img/checkerboard.png');
 }
 
+.droparea {
+  border: 2px dashed #bbb;
+  border-radius: 5px;
+  text-align: center;
+  width: 98%;
+  height: 98%;
+  box-sizing: border-box;
+  padding-top: 30%;
+  color: #bbb;
+  font-size: 32px;
+  position: absolute;;
+  top: 1%;
+  left: 1%;
+}
+
+.droparea.active {
+  border-color: #666;
+  color: #666;
+  font-weight: bold;
+}
+
+img[src=""] {
+  display: none;
+}
+
+
 a {
   cursor: pointer;
 }

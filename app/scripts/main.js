@@ -18,7 +18,9 @@ require.config({
     	lang: "../locales/lang",
     	lexed: '../components/lexed/lexed',
     	codemirror: '../components/codemirror',
-    	'marked': '../components/marked/marked',
+    	marked: '../components/marked/marked',
+    	lls: '../components/lls/dist',
+    	Q: '../components/q/q',
 
     	// build - rmap
     	'strut/presentation_generator/bespoke': '../bundles/app/strut.presentation_generator.bespoke',
@@ -35,6 +37,7 @@ require.config({
     	'strut/importer': '../bundles/app/strut.importer',
     	'strut/importer/json': '../bundles/app/strut.importer.json',
     	'strut/presentation_generator/impress': '../bundles/app/strut.presentation_generator.impress',
+    	'strut/presentation_generator/impress-mobile': '../bundles/app/strut.presentation_generator.impress-mobile',
     	'strut/logo_button': '../bundles/app/strut.logo_button',
     	'strut/presentation_generator': '../bundles/app/strut.presentation_generator',
     	'strut/slide_components': '../bundles/app/strut.slide_components',
@@ -190,6 +193,8 @@ log.notice = function(msg) {
 		console.log(msg);
 }
 
+window.URL = window.URL || window.webkitURL;
+
 // reassigning rquire to r for
 // the "preview" includes so they don't get built into the actual
 // amd app.
@@ -210,8 +215,12 @@ require([
 	'touchpunch',
 	'preview_export/scripts/dataset-shim'
 ],
-	function(Handlebars, lang, empt, empty, config, registry, StrutLoader, bootstrap, ContextMenu, css, tp, dss) {
+	function(Handlebars, lang, empt,
+			empty, config, registry, StrutLoader,
+			bootstrap, ContextMenu, css, tp, dss) {
 		'use strict';
+		window._gaq = window._gaq || [];
+		
 		var agent = window.navigator.userAgent;
 		if (agent.indexOf('WebKit') >= 0)
 			window.browserPrefix = "-webkit-"
@@ -233,11 +242,17 @@ require([
 			}
 		};
 
+		window.addEventListener("dragover",function(e){
+		  e = e || event;
+		  e.preventDefault();
+		},false);
+		window.addEventListener("drop",function(e){
+		  e = e || event;
+		  e.preventDefault();
+		},false);
+
+		window.serviceRegistry = registry;
 		StrutLoader.start(registry, function() {
 		}, function() {
-		});
-
-		$(window).unload(function() {
-			localStorage.setItem('Strut_sessionMeta', JSON.stringify(window.sessionMeta));
 		});
 	});
