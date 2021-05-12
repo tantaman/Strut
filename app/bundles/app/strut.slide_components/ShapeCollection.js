@@ -1,5 +1,5 @@
-define([],
-function() {
+define(["require"],
+function(require) {
 
 	/**
 	 * @constructor
@@ -13,19 +13,7 @@ function() {
 			return new PlatonicShape(name, src, markup, aspect);
 
 		this.name = name;
-		var loc = window.location.href;
-		var hashIdx = loc.indexOf('#');
-		var finalIdx;
-		if (hashIdx != -1) {
-			loc = loc.substring(0, hashIdx);
-		}
-		finalIdx = loc.lastIndexOf('/');
-
-		if (finalIdx != -1)
-			loc = loc.substring(0, finalIdx);
-
-		this.src = loc
-			+ '/preview_export/shapes/' + src;
+		this.src = require.toUrl('styles/img/' + src);
 		this.markup = markup;
 		this.aspect = aspect;
 	}
