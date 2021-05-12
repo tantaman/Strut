@@ -5,7 +5,7 @@ define({
 	add_slide: 'Folie hinzufügen',
 	remove_slide: 'Folie entfernen',
 	slides: 'Folien',
-	overview: 'Übersicht',
+	transitions: 'Transitions',
 	open: 'Öffnen',
 	save: 'Speichern',
 	save_as: 'Speichern als...',
@@ -33,5 +33,6 @@ define({
 		click_below: 'Klicken sie zum Herunterladen auf das Symbol unten'
 	},
 	background: 'Hintergrund',
-	surface: 'Oberfläche'
+	surface: 'Oberfläche',
+	present: 'Present'
 });

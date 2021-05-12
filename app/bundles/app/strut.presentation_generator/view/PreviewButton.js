@@ -3,7 +3,8 @@ function(Backbone, PreviewLauncher) {
 	return Backbone.View.extend({
 		className: 'btn-group iconBtns',
 		events: {
-			'click .act': '_launch'
+			'click .act': '_launch',
+			'click .option': '_launchOption'
 		},
 
 		initialize: function() {
@@ -13,49 +14,39 @@ function(Backbone, PreviewLauncher) {
 				.getBest('strut.presentation_generator.GeneratorCollection');
 
 			delete this.options.editorModel;
-			// TODO: we should keep session meta per bundle...
-			this._index = Math.min(window.sessionMeta.generator_index || 0, this._generators.length - 1);
-			this._generatorChanged();
+			this._editorModel.deck().on('change:cannedTransition', this._cannedTransitionChanged, this);
+			this._editorModel.on('change:generator', this._generatorChanged, this);
+
+			this._editorModel.set('generator', this._generators[0]);
 
 			this._template = JST['strut.presentation_generator/Button'];
 		},
 
+		_cannedTransitionChanged: function() {
+			this._generators.some(function(generator) {
+				if(generator.capabilities && generator.capabilities.transitions.includes(this._editorModel.cannedTransition())) {
+					this._editorModel.set('generator', generator);
+					return true;
+				}
+			}, this);
+		},
+
 		_launch: function() {
-			this._previewLauncher.launch(this._generators[this._index]);
+			this._previewLauncher.launch(this._editorModel.get('generator'));
 		},
 
-		_bind: function() {
-			var self = this;
-			this.$el.find('li').each(function(i) {
-				var $btn = $(this);
-				$btn.click(function(e) {
-					// self._previewLauncher.launch(self._generators[i]);
-					self.$el.find('.check').css('visibility', 'hidden');
-					$btn.find('.check').css('visibility', '');
-					self._index = i;
-					window.sessionMeta.generator_index = i;
-					self._generatorChanged();
-					self.$el.find('.dropdown-toggle').dropdown('toggle');
-					e.stopPropagation();
-				});
-			});
-		},
-
-		/**
-		* Need to inform the world of a generator update.
-		* Some modes are only present for certain generators.
-		*/
-		_generatorChanged: function() {
-			this._editorModel.set('generator', this._generators[this._index]);
-			if (this._$readout)
-				this._$readout.text(this._generators[this._index].displayName);
+		_launchOption: function(evt) {
+			this._generators.some(function(generator) {
+				if(generator.id === evt.currentTarget.dataset.option) {
+					this._previewLauncher.launch(generator);
+					return true;
+				}
+			}, this);
+			this.$el.find('.dropdown-toggle').dropdown('toggle');
 		},
 
 		render: function() {
-			this.$el.html(this._template({generators: this._generators, chosen: this._generators[this._index]}));
-			this._bind();
-			this._$readout = this.$el.find('.chosen');
-			$(this.$el.find('.check')[this._index]).css('visibility', '');
+			this.$el.html(this._template(this._generators));
 			return this;
 		}
 	});

@@ -5,7 +5,7 @@ define({
 	add_slide: 'إضافة شريحة',
 	remove_slide: 'حذف شريحة',
 	slides: 'شرائح',
-	overview: 'نظرة عامة',
+	transitions: 'Transitions',
 	open: 'فتح',
 	save: 'حفظ',
 	save_as: '...حفظ كـ',
@@ -33,5 +33,6 @@ define({
 		click_below: 'اضغط بالأسفل للتحميل'
 	},
 	background: 'خلفية',
-	surface: 'سطح'
+	surface: 'سطح',
+	present: 'Present'
 });

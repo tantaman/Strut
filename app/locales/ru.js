@@ -5,7 +5,7 @@ define({
 	add_slide: 'Добавить слайд',
 	remove_slide: 'Удалить слайд',
 	slides: 'Слайды',
-	overview: 'Эффекты',
+	transitions: 'Transitions',
 	open: 'Открыть',
 	save: 'Сохранить',
 	save_as: 'Сохранить как...',
@@ -33,5 +33,6 @@ define({
 		click_below: 'Для этого нажмите ниже.'
 	},
 	background: 'Фон',
-	surface: 'Холст'
+	surface: 'Холст',
+	present: 'Present'
 });
